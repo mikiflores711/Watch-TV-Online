@@ -194,8 +194,8 @@
         let categoriaActual = "";
         let favoritos = JSON.parse(localStorage.getItem('tv_favoritos')) || [];
 
-        // URL base absoluta para evitar bloqueos de lectura locales (CORS)
-        const baseUrl = "https://github.io";
+        // URL base absoluta de tu repositorio para evitar problemas de CORS
+        const baseUrl = "https://mikiflores711.github.io/Watch-TV-Online/";
 
         const coloresCategorias = {
             'favoritos': 'var(--color-fav)',
@@ -227,32 +227,32 @@
             });
         }
 
-function parsearYGuardarGlobal(texto, archivo) {
-    const lineas = texto.split('\n');
-    let canalActual = null;
-    lineas.forEach(linea => {
-        linea = linea.trim();
-        if (linea.startsWith('#EXTINF:')) {
-            let nombre = "Canal sin nombre";
-            let logo = 'https://placeholder.com';
-            
-            // Corrección: Validamos de forma segura si el logo realmente existe
-            const infoLogo = linea.match(/tvg-logo="([^"]+)"/);
-            if (infoLogo && infoLogo[1]) logo = infoLogo[1];
-            
-            const indiceComa = linea.lastIndexOf(',');
-            if (indiceComa !== -1) nombre = linea.substring(indiceComa + 1).trim();
-            canalActual = { nombre, logo, archivo };
-        } else if (linea.startsWith('http') && canalActual) {
-            canalActual.url = linea;
-            if(!todosLosCanales.some(c => c.url === canalActual.url)) {
-                todosLosCanales.push(canalActual);
-            }
-            canalActual = null;
+        function parsearYGuardarGlobal(texto, archivo) {
+            const lineas = texto.split('\n');
+            let canalActual = null;
+            lineas.forEach(linea => {
+                linea = linea.trim();
+                if (linea.startsWith('#EXTINF:')) {
+                    let nombre = "Canal sin nombre";
+                    let logo = 'https://placeholder.com';
+                    
+                    const infoLogo = linea.match(/tvg-logo="([^"]+)"/);
+                    if (infoLogo && infoLogo[1]) {
+                        logo = infoLogo[1];
+                    }
+                    
+                    const indiceComa = linea.lastIndexOf(',');
+                    if (indiceComa !== -1) nombre = linea.substring(indiceComa + 1).trim();
+                    canalActual = { nombre, logo, archivo };
+                } else if (linea.startsWith('http') && canalActual) {
+                    canalActual.url = linea;
+                    if(!todosLosCanales.some(c => c.url === canalActual.url)) {
+                        todosLosCanales.push(canalActual);
+                    }
+                    canalActual = null;
+                }
+            });
         }
-    });
-}
-
 
         function cargarLista(archivoM3u, boton) {
             document.getElementById('inputBusqueda').value = ""; 
@@ -288,7 +288,9 @@ function parsearYGuardarGlobal(texto, archivo) {
                     let logo = 'https://placeholder.com';
                     
                     const infoLogo = linea.match(/tvg-logo="([^"]+)"/);
-                    if (infoLogo) logo = infoLogo;
+                    if (infoLogo && infoLogo[1]) {
+                        logo = infoLogo[1];
+                    }
                     
                     const indiceComa = linea.lastIndexOf(',');
                     if (indiceComa !== -1) nombre = linea.substring(indiceComa + 1).trim();
