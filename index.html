@@ -58,7 +58,7 @@ video{width:100%;height:min(42vh,320px);display:block;background:#000;object-fit
 <body>
 <header class="header-fijo" id="headerFijo">
   <div class="contenedor-reproductor" id="wrapperPlayer">
-    <video id="videoPlayer" controls playsinline webkit-playsinline></video>
+    <video id="videoPlayer" controls playsinline webkit-playsinline x-webkit-airplay="allow" preload="metadata"></video>
     <div class="player-info"><span class="player-badge" id="playerStatus">Selecciona un canal</span></div>
   </div>
   <div class="contenedor-busqueda">
@@ -195,33 +195,139 @@ function searchChannels(){
  nombreLista.textContent=`Resultados para “${q}” · ${list.length} canales`;renderChannels(list);
 }
 
-function proxyUrl(ch){let u=PROXY_BASE+encodeURIComponent(ch.url);if(ch.referrer)u+='&ref='+encodeURIComponent(ch.referrer);if(ch.userAgent)u+='&ua='+encodeURIComponent(ch.userAgent);if(ch.origin)u+='&origin='+encodeURIComponent(ch.origin);return u}
-function destroyPlayback(){clearTimeout(fallbackTimer);if(hlsInstance){hlsInstance.destroy();hlsInstance=null}video.pause();video.removeAttribute('src');video.load()}
+function createDeviceId(){
+ let id=localStorage.getItem('watch_tv_device_id');
+ if(!id){id=(crypto.randomUUID?crypto.randomUUID():`${Date.now()}-${Math.random().toString(16).slice(2)}`);localStorage.setItem('watch_tv_device_id',id)}
+ return id;
+}
+
+function prepareStreamUrl(rawUrl){
+ const deviceId=createDeviceId();
+ const replacements={
+  '[DEVICE_ID]':deviceId,'[IFA]':deviceId,'[IFA_TYPE]':'rida','[LMT]':'1','[DNS]':'1',
+  '[DNT]':'1','[US_PRIVACY]':'1---','[GDPR]':'0','[GDPR_CONSENT]':'','[COUNTRY]':'MX',
+  '[APP_NAME]':'Watch TV Plus','[APP_BUNDLE]':'com.watchtvplus.web','[APP_VERSION]':'1.0',
+  '[APP_STOREURL]':location.href,'[APP_STORE_URL]':location.href,'[DEVICE_TYPE]':'mobile',
+  '[DEVICE_MAKE]':/iphone|ipad|ipod/i.test(navigator.userAgent)?'Apple':'Android',
+  '[DEVICE_MODEL]':/iphone/i.test(navigator.userAgent)?'iPhone':(/ipad/i.test(navigator.userAgent)?'iPad':'Mobile'),
+  '[WEBOS_VERSION]':'','[TARGETAD_ALLOWED]':'0','[FCK]':deviceId,'[VIEWSIZE]':'1280x720',
+  '[NONCE]':String(Date.now()),'[CONTENT_LIVE]':'1','[CONTENT_LIVESTREAM]':'1','[COPPA]':'0',
+  '[URL]':location.href,'[UA]':navigator.userAgent,'[IP]':'','[GPP]':'','[GPP_SID]':'',
+  '[CHANNEL_NAME]':'','[NETWORK_NAME]':'','[IDTYPE]':'rida','[IU]':'','[IC]':'','[PCS]':'',
+  '[PRODQ]':'1','[SCHAIN]':'','[INV_PARTNER_DOMAIN]':location.hostname
+ };
+ let url=String(rawUrl||'').trim();
+ for(const [token,value] of Object.entries(replacements)) url=url.split(token).join(encodeURIComponent(value));
+ return url.replace(/\?\?/g,'?');
+}
+
+function proxyUrl(ch){
+ const prepared=prepareStreamUrl(ch.url);
+ let u=PROXY_BASE+encodeURIComponent(prepared);
+ if(ch.referrer)u+='&ref='+encodeURIComponent(ch.referrer);
+ if(ch.userAgent)u+='&ua='+encodeURIComponent(ch.userAgent);
+ if(ch.origin)u+='&origin='+encodeURIComponent(ch.origin);
+ return u;
+}
+
+function destroyPlayback(){
+ clearTimeout(fallbackTimer);
+ if(hlsInstance){hlsInstance.destroy();hlsInstance=null}
+ video.pause();
+ video.removeAttribute('src');
+ while(video.firstChild)video.removeChild(video.firstChild);
+ video.load();
+}
+
+function nativeCanPlayHls(){
+ return !!(video.canPlayType('application/vnd.apple.mpegurl')||video.canPlayType('application/x-mpegURL'));
+}
 
 function playChannel(ch){
- currentChannel=ch;wrapper.classList.add('visible');updateHeaderHeight();renderChannels(inputBusqueda.value?todosLosCanales.filter(c=>c.category!=='adult'&&(`${c.name} ${c.group}`).toLowerCase().includes(inputBusqueda.value.toLowerCase())):(categoriaActual==='favoritos'?favoritos:(channelsByCategory[categoriaActual]||[])));
- playbackToken++;const token=playbackToken;destroyPlayback();playerStatus.textContent=`${ch.name} · conectando…`;
- const candidates=[];const mixed=location.protocol==='https:'&&ch.url.startsWith('http://');const headers=ch.referrer||ch.userAgent||ch.origin;
- if(!mixed&&!headers)candidates.push({name:'directo',url:ch.url});candidates.push({name:'proxy',url:proxyUrl(ch)});if(mixed||headers)candidates.push({name:'directo',url:ch.url});
- const unique=[...new Map(candidates.map(x=>[x.url,x])).values()];tryCandidate(unique,0,token,ch);
+ currentChannel=ch;
+ wrapper.classList.add('visible');
+ updateHeaderHeight();
+ renderChannels(inputBusqueda.value?todosLosCanales.filter(c=>c.category!=='adult'&&(`${c.name} ${c.group}`).toLowerCase().includes(inputBusqueda.value.toLowerCase())):(categoriaActual==='favoritos'?favoritos:(channelsByCategory[categoriaActual]||[])));
+ playbackToken++;
+ const token=playbackToken;
+ destroyPlayback();
+ playerStatus.textContent=`${ch.name} · toca Play si el teléfono bloquea el inicio automático`;
+
+ const direct=prepareStreamUrl(ch.url);
+ const proxied=proxyUrl(ch);
+ const pageHttps=location.protocol==='https:';
+ const mixed=pageHttps&&direct.startsWith('http://');
+ const requiresHeaders=!!(ch.referrer||ch.userAgent||ch.origin);
+ const candidates=[];
+
+ // iPhone/iPad/Safari: usa primero HLS nativo. Android: intenta directo y luego Hls.js.
+ if(!mixed&&!requiresHeaders)candidates.push({name:'reproductor nativo',url:direct,native:true});
+ candidates.push({name:'reproductor nativo con proxy',url:proxied,native:true});
+ if(!mixed&&requiresHeaders)candidates.push({name:'enlace directo',url:direct,native:true});
+
+ const unique=[...new Map(candidates.map(x=>[x.url,x])).values()];
+ tryCandidate(unique,0,token,ch);
  wrapper.scrollIntoView({behavior:'smooth',block:'start'});
 }
 
 function tryCandidate(candidates,index,token,ch){
- if(token!==playbackToken)return;if(index>=candidates.length){playerStatus.textContent=`${ch.name} · señal no disponible o bloqueada`;return}
- const cand=candidates[index];destroyPlayback();playerStatus.textContent=`${ch.name} · probando ${cand.name}`;
+ if(token!==playbackToken)return;
+ if(index>=candidates.length){
+  playerStatus.textContent=`${ch.name} · no se pudo abrir. El canal puede estar vencido, bloqueado por región o protegido con DRM.`;
+  return;
+ }
+ const cand=candidates[index];
+ destroyPlayback();
+ playerStatus.textContent=`${ch.name} · abriendo con ${cand.name}`;
  let succeeded=false;
- const success=()=>{if(token!==playbackToken||succeeded)return;succeeded=true;clearTimeout(fallbackTimer);playerStatus.textContent=`${ch.name} · reproduciendo por ${cand.name}`};
- const fail=()=>{if(token!==playbackToken||succeeded)return;clearTimeout(fallbackTimer);tryCandidate(candidates,index+1,token,ch)};
- video.addEventListener('playing',success,{once:true});video.addEventListener('loadeddata',success,{once:true});video.addEventListener('error',fail,{once:true});
- const isHls=/\.m3u8(?:$|[?#])/i.test(ch.url)||/m3u8/i.test(ch.url)||/jmp2\.uk\//i.test(ch.url);
- if(isHls&&Hls.isSupported()){
-  hlsInstance=new Hls({enableWorker:true,lowLatencyMode:true,maxBufferLength:25,manifestLoadingMaxRetry:3,levelLoadingMaxRetry:3,fragLoadingMaxRetry:3});
-  hlsInstance.loadSource(cand.url);hlsInstance.attachMedia(video);
-  hlsInstance.on(Hls.Events.MANIFEST_PARSED,()=>video.play().catch(()=>{}));
+ let failed=false;
+ const cleanup=()=>{clearTimeout(fallbackTimer)};
+ const success=()=>{
+  if(token!==playbackToken||succeeded)return;
+  succeeded=true;cleanup();
+  playerStatus.textContent=`${ch.name} · reproduciendo`;
+ };
+ const fail=()=>{
+  if(token!==playbackToken||succeeded||failed)return;
+  failed=true;cleanup();
+  setTimeout(()=>tryCandidate(candidates,index+1,token,ch),250);
+ };
+ video.addEventListener('playing',success,{once:true});
+ video.addEventListener('loadedmetadata',success,{once:true});
+ video.addEventListener('error',fail,{once:true});
+
+ const isHls=/\.m3u8(?:$|[?#])/i.test(cand.url)||/m3u8/i.test(cand.url)||/jmp2\.uk\//i.test(cand.url);
+
+ // Prioridad absoluta al reproductor HLS nativo de iOS/Safari y dispositivos compatibles.
+ if(isHls&&nativeCanPlayHls()){
+  video.src=cand.url;
+  video.load();
+  const promise=video.play();
+  if(promise)promise.catch(()=>{playerStatus.textContent=`${ch.name} · presiona ▶ para reproducir`;});
+ }
+ // En Android/Chrome sin HLS nativo, Hls.js alimenta el mismo elemento <video>
+ // y conserva los controles nativos del teléfono.
+ else if(isHls&&window.Hls&&Hls.isSupported()){
+  hlsInstance=new Hls({
+   enableWorker:true,lowLatencyMode:false,backBufferLength:30,maxBufferLength:30,
+   manifestLoadingMaxRetry:5,manifestLoadingRetryDelay:1000,
+   levelLoadingMaxRetry:5,fragLoadingMaxRetry:5
+  });
+  hlsInstance.loadSource(cand.url);
+  hlsInstance.attachMedia(video);
+  hlsInstance.on(Hls.Events.MANIFEST_PARSED,()=>{
+   const promise=video.play();
+   if(promise)promise.catch(()=>{playerStatus.textContent=`${ch.name} · presiona ▶ para reproducir`;});
+  });
   hlsInstance.on(Hls.Events.ERROR,(_,data)=>{if(data.fatal)fail()});
- }else{video.src=cand.url;video.play().catch(()=>{})}
- fallbackTimer=setTimeout(fail,FALLBACK_TIMEOUT);
+ }
+ else{
+  video.src=cand.url;
+  video.load();
+  const promise=video.play();
+  if(promise)promise.catch(()=>{playerStatus.textContent=`${ch.name} · presiona ▶ para reproducir`;});
+ }
+ fallbackTimer=setTimeout(()=>{if(!succeeded)fail()},18000);
 }
 
 document.getElementById('selectorListas').addEventListener('click',e=>{const b=e.target.closest('.btn-lista');if(b)showCategory(b.dataset.cat)});
