@@ -124,7 +124,7 @@
             transition: transform 0.1s ease, background-color 0.1s ease;
         }
         
-        /* EFECTO AL PRESIONAR (TOUCH / CLICK) */
+        /* EFECTO AL PRESIONAR */
         .canal:active { 
             transform: scale(0.92); 
             background-color: #2a2a2a; 
@@ -194,6 +194,9 @@
         let categoriaActual = "";
         let favoritos = JSON.parse(localStorage.getItem('tv_favoritos')) || [];
 
+        // URL base absoluta para evitar bloqueos de lectura locales (CORS)
+        const baseUrl = "https://github.io";
+
         const coloresCategorias = {
             'favoritos': 'var(--color-fav)',
             'mexico.m3u': 'var(--color-mexico)',
@@ -217,7 +220,10 @@
         function precargarTodasLasListas() {
             const listas = ['mexico.m3u','vix.m3u','pluto.m3u','tubi.m3u','espanol.m3u','roku_all.m3u','LG_Channels_mx.m3u','plex_mx.m3u','runtime.m3u','adult.m3u'];
             listas.forEach(archivo => {
-                fetch(archivo).then(r => r.text()).then(data => parsearYGuardarGlobal(data, archivo)).catch(()=>{});
+                fetch(baseUrl + archivo)
+                    .then(r => r.text())
+                    .then(data => parsearYGuardarGlobal(data, archivo))
+                    .catch(()=>{});
             });
         }
 
@@ -230,7 +236,7 @@
                     let nombre = "Canal sin nombre";
                     let logo = 'https://placeholder.com';
                     const infoLogo = linea.match(/tvg-logo="([^"]+)"/);
-                    if (infoLogo) logo = infoLogo[1];
+                    if (infoLogo) logo = infoLogo;
                     const indiceComa = linea.lastIndexOf(',');
                     if (indiceComa !== -1) nombre = linea.substring(indiceComa + 1).trim();
                     canalActual = { nombre, logo, archivo };
@@ -255,7 +261,7 @@
             const contenedor = document.getElementById('contenedorCanales');
             contenedor.innerHTML = '';
 
-            fetch(archivoM3u)
+            fetch(baseUrl + archivoM3u)
                 .then(response => response.text())
                 .then(data => {
                     parsearM3UYMostrar(data, archivoM3u);
@@ -278,7 +284,7 @@
                     let logo = 'https://placeholder.com';
                     
                     const infoLogo = linea.match(/tvg-logo="([^"]+)"/);
-                    if (infoLogo) logo = infoLogo[1];
+                    if (infoLogo) logo = infoLogo;
                     
                     const indiceComa = linea.lastIndexOf(',');
                     if (indiceComa !== -1) nombre = linea.substring(indiceComa + 1).trim();
