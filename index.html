@@ -3,112 +3,287 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mi Web de TV</title>
+    <title>Mi Web de TV Pro</title>
     <script src="https://jsdelivr.net"></script>
     <style>
-        body { background: #121212; color: white; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 20px; }
-        h1, h2 { text-align: center; }
-        h1 { font-size: 24px; margin-bottom: 5px; }
-        h2 { font-size: 16px; color: #888; font-weight: normal; margin-bottom: 25px; }
+        :root {
+            --color-fav: #ffcc00;
+            --color-mexico: #00a650;
+            --color-vix: #ff4500;
+            --color-pluto: #00d2ff;
+            --color-tubi: #ff9900;
+            --color-espanol: #e50914;
+            --color-roku: #662d91;
+            --color-lg: #a50034;
+            --color-plex: #e5a93b;
+            --color-runtime: #0055ff;
+            --color-adult: #ff007f;
+            --border-default: #2d2d2d;
+        }
+
+        body { 
+            background: #121212; 
+            color: white; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            padding-top: 290px; /* Espacio para el reproductor y buscador fijos */
+        }
         
+        /* CONTENEDOR FIJO (REPRODUCTOR + BUSCADOR) */
+        .header-fijo {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: #121212;
+            z-index: 1000;
+            box-shadow: 0px 5px 15px rgba(0,0,0,0.8);
+        }
+        
+        .contenedor-reproductor {
+            background: #000;
+            display: none;
+        }
+        
+        video {
+            width: 100%;
+            max-height: 200px;
+            display: block;
+            background: #000;
+        }
+
+        .contenedor-busqueda {
+            padding: 12px 20px;
+            background: #1a1a1a;
+            border-bottom: 1px solid #2d2d2d;
+        }
+
+        .barra-busqueda {
+            width: 100%;
+            padding: 12px;
+            border-radius: 25px;
+            border: 1px solid #444;
+            background: #2a2a2a;
+            color: white;
+            font-size: 15px;
+            box-sizing: border-box;
+            outline: none;
+        }
+
         /* Selector de Listas / Categorías */
-        .selector-listas { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 15px; margin-bottom: 25px; scrollbar-width: none; }
+        .selector-listas { display: flex; gap: 10px; overflow-x: auto; padding: 15px 20px; scrollbar-width: none; background: #121212; }
         .selector-listas::-webkit-scrollbar { display: none; }
-        .btn-lista { background: #222; color: #ccc; border: 1px solid #333; padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: bold; cursor: pointer; white-space: nowrap; transition: 0.2s; }
-        .btn-lista.activo { background: #007aff; color: white; border-color: #007aff; }
+        
+        .btn-lista { 
+            background: #222; 
+            color: #ccc; 
+            border: 2px solid #333; 
+            padding: 10px 20px; 
+            border-radius: 20px; 
+            font-size: 14px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            white-space: nowrap; 
+            transition: all 0.2s ease; 
+        }
+        
+        /* Colores dinámicos para los botones activos */
+        .btn-lista[data-cat="favoritos"].activo { background: var(--color-fav); color: black; border-color: var(--color-fav); }
+        .btn-lista[data-cat="mexico"].activo { background: var(--color-mexico); color: white; border-color: var(--color-mexico); }
+        .btn-lista[data-cat="vix"].activo { background: var(--color-vix); color: white; border-color: var(--color-vix); }
+        .btn-lista[data-cat="pluto"].activo { background: var(--color-pluto); color: black; border-color: var(--color-pluto); }
+        .btn-lista[data-cat="tubi"].activo { background: var(--color-tubi); color: black; border-color: var(--color-tubi); }
+        .btn-lista[data-cat="espanol"].activo { background: var(--color-espanol); color: white; border-color: var(--color-espanol); }
+        .btn-lista[data-cat="roku_all"].activo { background: var(--color-roku); color: white; border-color: var(--color-roku); }
+        .btn-lista[data-cat="LG_Channels_mx"].activo { background: var(--color-lg); color: white; border-color: var(--color-lg); }
+        .btn-lista[data-cat="plex_mx"].activo { background: var(--color-plex); color: black; border-color: var(--color-plex); }
+        .btn-lista[data-cat="runtime"].activo { background: var(--color-runtime); color: white; border-color: var(--color-runtime); }
+        .btn-lista[data-cat="adult"].activo { background: var(--color-adult); color: white; border-color: var(--color-adult); }
+
+        h2 { text-align: center; font-size: 16px; color: #888; font-weight: normal; margin-top: 10px; margin-bottom: 20px; }
 
         /* Grid de Canales */
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 15px; max-width: 1000px; margin: 0 auto; }
-        .canal { background: #1e1e1e; border-radius: 12px; padding: 15px; text-align: center; border: 1px solid #2d2d2d; transition: transform 0.2s; cursor: pointer; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-        .canal:active { transform: scale(0.95); }
-        .canal img { width: 100%; height: 65px; object-fit: contain; margin-bottom: 10px; border-radius: 6px; background: #1a1a1a; }
-        .canal p { margin: 0; font-size: 13px; font-weight: 500; width: 100%; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.3; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(125px, 1fr)); gap: 15px; max-width: 1000px; margin: 0 auto; padding-bottom: 40px; }
         
-        video { display: none; width: 100%; height: auto; }
+        /* DISEÑO DE TARJETA DE CANAL */
+        .canal { 
+            background: #1e1e1e; 
+            border-radius: 12px; 
+            padding: 12px; 
+            text-align: center; 
+            border: 2px solid var(--border-default); 
+            cursor: pointer; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center; 
+            position: relative;
+            user-select: none;
+            -webkit-user-select: none;
+            transition: transform 0.1s ease, background-color 0.1s ease;
+        }
+        
+        /* EFECTO AL PRESIONAR (TOUCH / CLICK) */
+        .canal:active { 
+            transform: scale(0.92); 
+            background-color: #2a2a2a; 
+        }
+        
+        .canal img { width: 100%; height: 65px; object-fit: contain; margin-bottom: 10px; border-radius: 6px; background: #1a1a1a; pointer-events: none; }
+        .canal p { margin: 0; font-size: 13px; font-weight: 500; width: 100%; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.3; pointer-events: none; }
+        
+        /* BOTÓN DE ESTRELLA FAVORITOS */
+        .btn-favorito {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: rgba(0,0,0,0.6);
+            border: none;
+            color: #666;
+            font-size: 18px;
+            cursor: pointer;
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s, color 0.2s;
+            z-index: 10;
+        }
+        .btn-favorito:active { transform: scale(1.3); }
+        .btn-favorito.en-favoritos { color: var(--color-fav); }
     </style>
 </head>
 <body>
 
-    <h1>Mi TV en Vivo</h1>
-    <h2 id="nombreLista">Selecciona una categoría</h2>
+    <!-- BLOQUE SUPERIOR FIJO -->
+    <div class="header-fijo">
+        <div class="contenedor-reproductor" id="wrapperPlayer">
+            <video id="videoPlayer" controls playsinline webkit-playsinline></video>
+        </div>
+        
+        <div class="contenedor-busqueda">
+            <input type="text" id="inputBusqueda" class="barra-busqueda" placeholder="🔍 Buscar canales (Excluye adultos)..." oninput="filtrarBusqueda()">
+        </div>
 
-    <!-- Menú de categorías basado en tus archivos reales de GitHub -->
-    <div class="selector-listas">
-        <button class="btn-lista" onclick="cargarLista('mexico.m3u', this)">México</button>
-        <button class="btn-lista" onclick="cargarLista('vix.m3u', this)">Vix</button>
-        <button class="btn-lista" onclick="cargarLista('pluto.m3u', this)">Pluto</button>
-        <button class="btn-lista" onclick="cargarLista('tubi.m3u', this)">Tubi</button>
-        <button class="btn-lista" onclick="cargarLista('espanol.m3u', this)">Español</button>
-        <button class="btn-lista" onclick="cargarLista('roku_all.m3u', this)">Roku</button>
-        <button class="btn-lista" onclick="cargarLista('LG_Channels_mx.m3u', this)">LG Channels</button>
-        <button class="btn-lista" onclick="cargarLista('plex_mx.m3u', this)">Plex</button>
-        <button class="btn-lista" onclick="cargarLista('runtime.m3u', this)">Runtime</button>
-        <button class="btn-lista" onclick="cargarLista('adult.m3u', this)">Adultos</button>
+        <div class="selector-listas">
+            <button class="btn-lista" data-cat="favoritos" onclick="cargarFavoritos(this)">⭐ Favoritos</button>
+            <button class="btn-lista" data-cat="mexico" onclick="cargarLista('mexico.m3u', this)">México</button>
+            <button class="btn-lista" data-cat="vix" onclick="cargarLista('vix.m3u', this)">Vix</button>
+            <button class="btn-lista" data-cat="pluto" onclick="cargarLista('pluto.m3u', this)">Pluto</button>
+            <button class="btn-lista" onclick="cargarLista('tubi.m3u', this)" data-cat="tubi">Tubi</button>
+            <button class="btn-lista" onclick="cargarLista('espanol.m3u', this)" data-cat="espanol">Español</button>
+            <button class="btn-lista" onclick="cargarLista('roku_all.m3u', this)" data-cat="roku_all">Roku</button>
+            <button class="btn-lista" onclick="cargarLista('LG_Channels_mx.m3u', this)" data-cat="LG_Channels_mx">LG Channels</button>
+            <button class="btn-lista" onclick="cargarLista('plex_mx.m3u', this)" data-cat="plex_mx">Plex</button>
+            <button class="btn-lista" onclick="cargarLista('runtime.m3u', this)" data-cat="runtime">Runtime</button>
+            <button class="btn-lista" onclick="cargarLista('adult.m3u', this)" data-cat="adult">Adultos</button>
+        </div>
     </div>
 
-    <!-- Contenedor donde aparecerán los canales -->
+    <h2 id="nombreLista">Selecciona una categoría</h2>
     <div class="grid" id="contenedorCanales"></div>
-    
-    <!-- Reproductor oculto para disparar el modo nativo -->
-    <video id="videoPlayer" controls></video>
-
     <script>
         const video = document.getElementById('videoPlayer');
+        const wrapper = document.getElementById('wrapperPlayer');
+        let hlsInstance = null;
+        
+        let todosLosCanales = []; 
+        let categoriaActual = "";
+        let favoritos = JSON.parse(localStorage.getItem('tv_favoritos')) || [];
 
-        // Carga la lista de México automáticamente al abrir la web
-        window.onload = () => {
-            const primerBoton = document.querySelector('.btn-lista');
-            if (primerBoton) primerBoton.click();
+        const coloresCategorias = {
+            'favoritos': 'var(--color-fav)',
+            'mexico.m3u': 'var(--color-mexico)',
+            'vix.m3u': 'var(--color-vix)',
+            'pluto.m3u': 'var(--color-pluto)',
+            'tubi.m3u': 'var(--color-tubi)',
+            'espanol.m3u': 'var(--color-espanol)',
+            'roku_all.m3u': 'var(--color-roku)',
+            'LG_Channels_mx.m3u': 'var(--color-lg)',
+            'plex_mx.m3u': 'var(--color-plex)',
+            'runtime.m3u': 'var(--color-runtime)',
+            'adult.m3u': 'var(--color-adult)'
         };
 
+        window.onload = () => {
+            const botonMexico = document.querySelector('[data-cat="mexico"]');
+            if (botonMexico) botonMexico.click();
+            precargarTodasLasListas();
+        };
+
+        function precargarTodasLasListas() {
+            const listas = ['mexico.m3u','vix.m3u','pluto.m3u','tubi.m3u','espanol.m3u','roku_all.m3u','LG_Channels_mx.m3u','plex_mx.m3u','runtime.m3u','adult.m3u'];
+            listas.forEach(archivo => {
+                fetch(archivo).then(r => r.text()).then(data => parsearYGuardarGlobal(data, archivo)).catch(()=>{});
+            });
+        }
+
+        function parsearYGuardarGlobal(texto, archivo) {
+            const lineas = texto.split('\n');
+            let canalActual = null;
+            lineas.forEach(linea => {
+                linea = linea.trim();
+                if (linea.startsWith('#EXTINF:')) {
+                    let nombre = "Canal sin nombre";
+                    let logo = 'https://placeholder.com';
+                    const infoLogo = linea.match(/tvg-logo="([^"]+)"/);
+                    if (infoLogo) logo = infoLogo[1];
+                    const indiceComa = linea.lastIndexOf(',');
+                    if (indiceComa !== -1) nombre = linea.substring(indiceComa + 1).trim();
+                    canalActual = { nombre, logo, archivo };
+                } else if (linea.startsWith('http') && canalActual) {
+                    canalActual.url = linea;
+                    if(!todosLosCanales.some(c => c.url === canalActual.url)) {
+                        todosLosCanales.push(canalActual);
+                    }
+                    canalActual = null;
+                }
+            });
+        }
+
         function cargarLista(archivoM3u, boton) {
+            document.getElementById('inputBusqueda').value = ""; 
+            categoriaActual = archivoM3u;
+            
             document.querySelectorAll('.btn-lista').forEach(btn => btn.classList.remove('activo'));
             boton.classList.add('activo');
-            document.getElementById('nombreLista').innerText = `Cargando lista: ${boton.innerText}...`;
+            document.getElementById('nombreLista').innerText = `Cargando: ${boton.innerText}...`;
 
             const contenedor = document.getElementById('contenedorCanales');
             contenedor.innerHTML = '';
 
             fetch(archivoM3u)
-                .then(response => {
-                    if (!response.ok) throw new Error();
-                    return response.text();
-                })
+                .then(response => response.text())
                 .then(data => {
-                    parsearM3U(data);
+                    parsearM3UYMostrar(data, archivoM3u);
                     document.getElementById('nombreLista').innerText = `${boton.innerText}`;
                 })
                 .catch(() => {
-                    document.getElementById('nombreLista').innerText = `Error al cargar la lista ${boton.innerText}`;
+                    document.getElementById('nombreLista').innerText = `Error al cargar ${boton.innerText}`;
                 });
         }
 
-        function parsearM3U(texto) {
+        function parsearM3UYMostrar(texto, archivo) {
             const lineas = texto.split('\n');
             const contenedor = document.getElementById('contenedorCanales');
             let canalActual = null;
 
             lineas.forEach(linea => {
                 linea = linea.trim();
-                
                 if (linea.startsWith('#EXTINF:')) {
                     let nombre = "Canal sin nombre";
                     let logo = 'https://placeholder.com';
                     
-                    // 1. Intentar buscar logo si existiera en un futuro
                     const infoLogo = linea.match(/tvg-logo="([^"]+)"/);
                     if (infoLogo) logo = infoLogo[1];
                     
-                    // 2. Extraer el nombre de forma segura (cortando después de la última coma)
                     const indiceComa = linea.lastIndexOf(',');
-                    if (indiceComa !== -1) {
-                        nombre = linea.substring(indiceComa + 1).trim();
-                    } else {
-                        // Respaldo por si no tiene comas
-                        nombre = linea.replace('#EXTINF:', '').trim();
-                    }
+                    if (indiceComa !== -1) nombre = linea.substring(indiceComa + 1).trim();
                     
-                    canalActual = { nombre, logo };
+                    canalActual = { nombre, logo, archivo };
                 } else if (linea.startsWith('http') && canalActual) {
                     canalActual.url = linea;
                     crearTarjetaCanal(canalActual, contenedor);
@@ -117,46 +292,111 @@
             });
         }
 
+        function cargarFavoritos(boton) {
+            document.getElementById('inputBusqueda').value = ""; 
+            categoriaActual = "favoritos";
+            document.querySelectorAll('.btn-lista').forEach(btn => btn.classList.remove('activo'));
+            boton.classList.add('activo');
+            document.getElementById('nombreLista').innerText = "⭐ Tus Canales Favoritos";
+            renderizarArregloCanales(favoritos);
+        }
+
         function crearTarjetaCanal(canal, contenedor) {
             const div = document.createElement('div');
             div.className = 'canal';
-            div.onclick = () => playCanal(canal.url);
+            
+            const colorBorde = coloresCategorias[canal.archivo] || 'var(--border-default)';
+            div.style.borderColor = colorBorde;
+
+            const esFav = favoritos.some(f => f.url === canal.url);
+            const estrellaClase = esFav ? 'en-favoritos' : '';
+
             div.innerHTML = `
+                <button class="btn-favorito ${estrellaClase}" onclick="alternarFavorito(event, ${JSON.stringify(canal).replace(/"/g, '&quot;')})">★</button>
                 <img src="${canal.logo}" alt="${canal.nombre}" onerror="this.src='https://placeholder.com'">
                 <p>${canal.nombre}</p>
             `;
+            
+            div.onclick = (e) => {
+                if(e.target.classList.contains('btn-favorito')) return;
+                playCanal(canal.url);
+            };
+
             contenedor.appendChild(div);
         }
 
-        function playCanal(url) {
-            if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                video.src = url;
-                video.style.display = "block";
-                video.play().then(() => {
-                    if (video.webkitEnterFullscreen) video.webkitEnterFullscreen();
-                });
-            } else if (Hls.isSupported()) {
-                const hls = new Hls();
-                hls.loadSource(url);
-                hls.attachMedia(video);
-                video.style.display = "block";
-                hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                    video.play().then(() => {
-                        if (video.requestFullscreen) video.requestFullscreen();
-                    });
-                });
+        function alternarFavorito(event, canal) {
+            event.stopPropagation(); 
+            const botonEstre = event.target;
+            
+            const index = favoritos.findIndex(f => f.url === canal.url);
+            if (index > -1) {
+                favoritos.splice(index, 1);
+                botonEstre.classList.remove('en-favoritos');
+            } else {
+                favoritos.push(canal);
+                botonEstre.classList.add('en-favoritos');
+            }
+            
+            localStorage.setItem('tv_favoritos', JSON.stringify(favoritos));
+            
+            if (categoriaActual === "favoritos") {
+                renderizarArregloCanales(favoritos);
             }
         }
 
-        const exitHandler = () => {
-            if (!document.fullscreenElement && !document.webkitIsFullScreen) {
-                video.pause();
-                video.style.display = "none";
-                video.src = "";
+        function renderizarArregloCanales(arreglo) {
+            const contenedor = document.getElementById('contenedorCanales');
+            contenedor.innerHTML = '';
+            if(arreglo.length === 0) {
+                contenedor.innerHTML = `<p style="grid-column: 1/-1; color: #666; text-align:center; margin-top:20px;">No hay canales para mostrar aquí.</p>`;
+                return;
             }
-        };
-        document.addEventListener('fullscreenchange', exitHandler);
-        document.addEventListener('webkitfullscreenchange', exitHandler);
+            arreglo.forEach(canal => crearTarjetaCanal(canal, contenedor));
+        }
+
+        function filtrarBusqueda() {
+            const texto = document.getElementById('inputBusqueda').value.toLowerCase().trim();
+            document.querySelectorAll('.btn-lista').forEach(btn => btn.classList.remove('activo'));
+            
+            if (texto === "") {
+                const btnMex = document.querySelector('[data-cat="mexico"]');
+                if(btnMex) btnMex.click();
+                return;
+            }
+
+            document.getElementById('nombreLista').innerText = `Resultados para: "${texto}"`;
+
+            const resultados = todosLosCanales.filter(canal => {
+                const coincideTexto = canal.nombre.toLowerCase().includes(texto);
+                const noEsAdulto = canal.archivo !== 'adult.m3u'; 
+                return coincideTexto && noEsAdulto;
+            });
+
+            renderizarArregloCanales(resultados);
+        }
+
+        function playCanal(url) {
+            wrapper.style.display = "block";
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            if (hlsInstance) {
+                hlsInstance.destroy();
+                hlsInstance = null;
+            }
+
+            if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                video.src = url;
+                video.play();
+            } else if (Hls.isSupported()) {
+                hlsInstance = new Hls();
+                hlsInstance.loadSource(url);
+                hlsInstance.attachMedia(video);
+                hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
+                    video.play();
+                });
+            }
+        }
     </script>
 </body>
 </html>
