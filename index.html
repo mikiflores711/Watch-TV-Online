@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#11131d" />
   <title>CinePlay | Películas y Series</title>
+  <link href="https://vjs.zencdn.net/8.23.8/video-js.min.css" rel="stylesheet" />
   <style>
     :root {
       --bg: #10121b;
@@ -1396,6 +1397,155 @@
       }
     }
 
+  
+
+    /* ============================================================
+       VIDEO.JS — REPRODUCTOR MP4 RESPONSIVE
+       ============================================================ */
+    .detail-view {
+      width: min(100%, 1120px);
+    }
+
+    .player-ratio {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      max-height: none;
+      background: #000;
+    }
+
+    #directVideo,
+    #directVideo.video-js {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      width: 100% !important;
+      height: 100% !important;
+      max-width: none;
+      max-height: none;
+      background: #000;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    #directVideo .vjs-tech {
+      width: 100% !important;
+      height: 100% !important;
+      object-fit: contain;
+      background: #000;
+    }
+
+    #directVideo .vjs-poster {
+      background-position: center;
+      background-repeat: no-repeat;
+      background-size: cover;
+      filter: saturate(.88) brightness(.72);
+    }
+
+    #directVideo .vjs-poster::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(180deg, rgba(3,4,8,.38), rgba(3,4,8,.03) 40%, rgba(3,4,8,.18) 66%, rgba(3,4,8,.7)),
+        radial-gradient(circle at center, transparent 0 22%, rgba(0,0,0,.2) 72%, rgba(0,0,0,.42));
+      pointer-events: none;
+    }
+
+    #directVideo .vjs-big-play-button {
+      top: 50%;
+      left: 50%;
+      width: clamp(74px, 12vw, 98px);
+      height: clamp(74px, 12vw, 98px);
+      margin: 0;
+      transform: translate(-50%, -50%);
+      border: 5px solid #fff;
+      border-radius: 50%;
+      background: rgba(5,6,10,.32);
+      box-shadow: 0 8px 32px rgba(0,0,0,.5);
+      backdrop-filter: blur(3px);
+      transition: transform .18s ease, background .18s ease;
+    }
+
+    #directVideo:hover .vjs-big-play-button,
+    #directVideo .vjs-big-play-button:focus {
+      transform: translate(-50%, -50%) scale(1.055);
+      background: rgba(85,113,255,.9);
+    }
+
+    #directVideo .vjs-big-play-button .vjs-icon-placeholder::before {
+      font-size: clamp(42px, 7vw, 58px);
+      line-height: clamp(64px, 11vw, 88px);
+    }
+
+    #directVideo .vjs-control-bar {
+      height: 4.2em;
+      padding: 0 .45em;
+      background: linear-gradient(0deg, rgba(0,0,0,.95), rgba(0,0,0,.66) 62%, transparent);
+    }
+
+    #directVideo .vjs-control {
+      width: 3.6em;
+    }
+
+    #directVideo .vjs-progress-control {
+      min-width: 5em;
+    }
+
+    #directVideo .vjs-play-progress,
+    #directVideo .vjs-volume-level {
+      background: #5571ff;
+    }
+
+    #directVideo .vjs-play-progress::before,
+    #directVideo .vjs-volume-level::before {
+      color: #5571ff;
+    }
+
+    #directVideo .vjs-slider {
+      background: rgba(255,255,255,.34);
+    }
+
+    #directVideo .vjs-loading-spinner {
+      border-color: rgba(255,255,255,.25);
+      border-top-color: #fff;
+    }
+
+    #directVideo .vjs-error-display::before {
+      color: #fff;
+    }
+
+    #directVideo.vjs-fullscreen {
+      position: fixed !important;
+      inset: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      max-width: none !important;
+      max-height: none !important;
+      padding: 0 !important;
+      z-index: 99999 !important;
+    }
+
+    #directVideo.vjs-fullscreen .vjs-tech,
+    #directVideo.vjs-fullscreen .vjs-poster {
+      width: 100vw !important;
+      height: 100vh !important;
+    }
+
+    #directVideo.vjs-fullscreen .vjs-poster {
+      background-size: contain;
+      background-color: #000;
+    }
+
+    .player-chrome {
+      z-index: 20;
+    }
+
+    @media (max-width: 520px) {
+      #directVideo .vjs-control-bar { height: 3.75em; padding-inline: .15em; }
+      #directVideo .vjs-control { width: 3.15em; }
+      #directVideo .vjs-time-control { font-size: 11px; }
+      #directVideo .vjs-volume-panel { display: none; }
+    }
+
   </style>
 </head>
 <body>
@@ -1545,12 +1695,6 @@
         </div>
         <div class="settings-stack">
           <label class="setting-row">
-            <span class="setting-icon"><svg class="svg-icon" viewBox="0 0 24 24"><path d="m8 5 11 7-11 7z"></path></svg></span>
-            <span class="setting-copy"><strong>Reproducción automática</strong><small>Iniciar el contenido al abrir su ficha</small></span>
-            <input id="autoplaySetting" class="switch-input" type="checkbox">
-            <span class="switch-ui"></span>
-          </label>
-          <label class="setting-row">
             <span class="setting-icon"><svg class="svg-icon" viewBox="0 0 24 24"><path d="M4 12h16M12 4v16"></path></svg></span>
             <span class="setting-copy"><strong>Tarjetas grandes</strong><small>Mostrar portadas más amplias en el catálogo</small></span>
             <input id="largeCardsSetting" class="switch-input" type="checkbox">
@@ -1591,51 +1735,15 @@
     <section id="detailView" class="detail-view">
       <div class="player-shell">
         <div class="player-ratio" id="playerRatio">
-          <iframe
-            id="movieFrame"
-            title="Reproductor de película"
-            allow="autoplay; fullscreen; picture-in-picture; encrypted-media; clipboard-write"
-            allowfullscreen
-            loading="eager"
-            referrerpolicy="strict-origin-when-cross-origin"></iframe>
-          <video id="directVideo" class="media-hidden" playsinline preload="metadata"></video>
-
-          <div id="playerCover" class="player-cover">
-            <div id="playerPoster" class="player-poster"></div>
-            <button id="bigPlayButton" class="big-play" aria-label="Reproducir película">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>
-            </button>
-
-            <div class="preview-controls" aria-hidden="true">
-              <div class="preview-time">00:00</div>
-              <div class="preview-row">
-                <button id="previewPlayButton" class="preview-mini-play" aria-label="Reproducir">
-                  <svg viewBox="0 0 24 24"><path d="M7 4v16l13-8z"></path></svg>
-                </button>
-                <div class="preview-track"><span class="preview-progress"></span><span class="preview-dot"></span></div>
-                <span id="previewDuration" class="preview-duration">--:--</span>
-                <button id="previewFullscreenButton" class="preview-fullscreen" aria-label="Pantalla completa">
-                  <svg class="svg-icon" viewBox="0 0 24 24"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"></path></svg>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div id="playerLoading" class="player-loading hidden"><div class="spinner"></div></div>
-
-          <div id="directControls" class="direct-controls hidden">
-            <div id="directCurrentTop" class="direct-time-top">00:00</div>
-            <div class="direct-row">
-              <button id="directPlayButton" class="direct-play" aria-label="Reproducir o pausar">
-                <svg id="directPlayIcon" viewBox="0 0 24 24"><path d="M7 4v16l13-8z"></path></svg>
-              </button>
-              <input id="directProgress" class="direct-progress" type="range" min="0" max="1000" value="0" aria-label="Progreso del video">
-              <span id="directDuration" class="direct-duration">--:--</span>
-              <button id="directFullscreenButton" class="direct-fullscreen" aria-label="Pantalla completa">
-                <svg class="svg-icon" viewBox="0 0 24 24"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"></path></svg>
-              </button>
-            </div>
-          </div>
+          <video
+            id="directVideo"
+            class="video-js vjs-big-play-centered"
+            controls
+            playsinline
+            preload="metadata"
+            aria-label="Reproductor de películas y series">
+            <p class="vjs-no-js">Activa JavaScript para reproducir este video.</p>
+          </video>
 
           <div class="player-chrome">
             <button id="backButton" class="chrome-button" aria-label="Regresar">
@@ -1724,6 +1832,9 @@
   </div>
 
   <div id="toast" class="toast"></div>
+
+  <script>window.HELP_IMPROVE_VIDEOJS = false;</script>
+  <script src="https://vjs.zencdn.net/8.23.8/video.min.js"></script>
 
   <script>
     /* ============================================================
@@ -3532,12 +3643,25 @@
 
     const catalogView = $("#catalogView");
     const detailView = $("#detailView");
-    const frame = $("#movieFrame");
-    const video = $("#directVideo");
-    const loading = $("#playerLoading");
-    const cover = $("#playerCover");
-    const directControls = $("#directControls");
+    const videoElement = $("#directVideo");
     const serverOverlay = $("#serverOverlay");
+    const videoPlayer = window.videojs
+      ? window.videojs(videoElement, {
+          controls: true,
+          autoplay: false,
+          preload: "metadata",
+          responsive: true,
+          inactivityTimeout: 2600,
+          controlBar: {
+            pictureInPictureToggle: true,
+            fullscreenToggle: true
+          }
+        })
+      : null;
+
+    if (videoPlayer) {
+      videoPlayer.autoplay(false);
+    }
 
     function escapeXml(text) {
       return String(text)
@@ -3692,15 +3816,16 @@
     }
 
     function resetMedia() {
-      frame.src = "about:blank";
-      frame.classList.remove("media-hidden");
-      video.pause();
-      video.removeAttribute("src");
-      video.load();
-      video.classList.add("media-hidden");
-      directControls.classList.add("hidden");
-      loading.classList.add("hidden");
       clearTimeout(state.controlsTimer);
+      if (videoPlayer) {
+        videoPlayer.pause();
+        videoPlayer.reset();
+        videoPlayer.autoplay(false);
+      } else if (videoElement) {
+        videoElement.pause();
+        videoElement.removeAttribute("src");
+        videoElement.load();
+      }
     }
 
     function openMovie(movieId, updateHash = true) {
@@ -3719,8 +3844,7 @@
       $("#detailActors").textContent = movie.actors || "Información no disponible";
       $("#detailCreatorLabel").textContent = movie.type === "series" ? "Creador:" : "Director:";
       $("#detailCastLabel").textContent = movie.type === "series" ? "Reparto:" : "Actores:";
-      $("#previewDuration").textContent = movie.duration || "--:--";
-      $("#playerPoster").style.backgroundImage = `url("${makePoster(movie, true)}")`;
+      setPlayerPoster(movie);
       $("#detailFavorite").classList.toggle("active", state.favorites.has(movie.id));
       $("#descriptionWrap").classList.remove("expanded");
       $("#descriptionToggle").textContent = "ver más";
@@ -3745,12 +3869,10 @@
       localStorage.setItem("cineplay_last_movie", movie.id);
       if (updateHash) history.pushState({ movieId }, "", `#pelicula=${movie.id}`);
 
-      if (localStorage.getItem("cineplay_autoplay") !== "false") window.setTimeout(startPlayback, 180);
     }
 
     function closeMovie(updateHistory = true) {
       resetMedia();
-      cover.classList.remove("hidden");
       serverOverlay.classList.remove("visible");
       serverOverlay.setAttribute("aria-hidden", "true");
       detailView.classList.remove("visible");
@@ -3774,7 +3896,6 @@
           stageSource(index);
           closeServerSheet();
           showToast(`${source.name} seleccionado`);
-          startPlayback();
         };
         list.appendChild(button);
       });
@@ -3784,7 +3905,8 @@
       if (!state.currentMovie?.sources?.[index]) return;
       state.currentSource = index;
       resetMedia();
-      cover.classList.remove("hidden");
+      setPlayerPoster(state.currentMovie);
+      setPlayerSource(currentSource());
       renderServers();
     }
 
@@ -3830,7 +3952,10 @@
         button.innerHTML = isActive
           ? `<svg class="episode-play-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>`
           : `<span class="episode-number">${episode.episode}</span>`;
-        button.onclick = () => stageEpisode(state.currentSeason, index, true);
+        button.onclick = () => {
+          stageEpisode(state.currentSeason, index);
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        };
         list.appendChild(button);
       });
     }
@@ -3839,61 +3964,49 @@
       if (state.currentMovie?.type !== "series") return;
       const season = state.currentMovie.seasons[state.currentSeason];
       const episode = season.episodes[state.currentEpisode];
-      $("#nowPlaying").textContent = `Reproduciendo: T${season.number} · E${episode.episode} — ${episode.title}`;
-      $("#previewDuration").textContent = episode.duration || "22:00";
-      $("#directDuration").textContent = episode.duration || "22:00";
+      $("#nowPlaying").textContent = `Seleccionado: T${season.number} · E${episode.episode} — ${episode.title}`;
     }
 
-    function stageEpisode(seasonIndex, episodeIndex, autoplay = true) {
+    function stageEpisode(seasonIndex, episodeIndex) {
       if (state.currentMovie?.type !== "series") return;
       state.currentSeason = seasonIndex;
       state.currentEpisode = episodeIndex;
       resetMedia();
-      cover.classList.remove("hidden");
+      setPlayerPoster(state.currentMovie);
+      setPlayerSource(currentSource());
       updateEpisodeText();
       renderSeasonTabs();
       renderEpisodes();
-      if (autoplay) {
-        window.scrollTo({ top: 0, behavior: "smooth" });
-        window.setTimeout(startPlayback, 120);
-      }
     }
 
     function isDirectVideo(source) {
       return source?.type === "mp4" || /\.(mp4|webm|ogg)(?:$|\?)/i.test(source?.url || "");
     }
 
-    async function startPlayback() {
-      const source = currentSource();
-      if (!source) return;
-      loading.classList.remove("hidden");
-      cover.classList.add("hidden");
+    function mediaMimeType(source) {
+      const url = source?.url || "";
+      if (/\.webm(?:$|\?)/i.test(url)) return "video/webm";
+      if (/\.ogg(?:$|\?)/i.test(url)) return "video/ogg";
+      return "video/mp4";
+    }
 
-      if (isDirectVideo(source)) {
-        frame.src = "about:blank";
-        frame.classList.add("media-hidden");
-        video.classList.remove("media-hidden");
-        directControls.classList.remove("hidden");
-        if (video.src !== source.url) {
-          video.src = source.url;
-          video.load();
-        }
-        try {
-          await video.play();
-          showDirectControls();
-        } catch {
-          loading.classList.add("hidden");
-          cover.classList.remove("hidden");
-          directControls.classList.add("hidden");
-          showToast(state.currentMovie?.type === "series" ? "Toca reproducir para iniciar el episodio" : "Toca reproducir para iniciar la película");
-        }
-      } else {
-        video.pause();
-        video.classList.add("media-hidden");
-        directControls.classList.add("hidden");
-        frame.classList.remove("media-hidden");
-        frame.src = "about:blank";
-        setTimeout(() => { frame.src = source.url; }, 90);
+    function setPlayerPoster(movie = state.currentMovie) {
+      if (!movie) return;
+      const poster = makePoster(movie, true);
+      if (videoPlayer) videoPlayer.poster(poster);
+      else if (videoElement) videoElement.poster = poster;
+    }
+
+    function setPlayerSource(source) {
+      if (!source?.url || !isDirectVideo(source)) return;
+      const playerSource = { src: source.url, type: mediaMimeType(source) };
+      if (videoPlayer) {
+        videoPlayer.autoplay(false);
+        videoPlayer.src(playerSource);
+        videoPlayer.load();
+      } else if (videoElement) {
+        videoElement.src = source.url;
+        videoElement.load();
       }
     }
 
@@ -3913,85 +4026,33 @@
       serverOverlay.setAttribute("aria-hidden", "true");
     }
 
-    frame.addEventListener("load", () => {
-      if (frame.src && frame.src !== "about:blank") {
-        setTimeout(() => loading.classList.add("hidden"), 500);
-      }
-    });
 
-    function formatTime(seconds) {
-      if (!Number.isFinite(seconds)) return "--:--";
-      const total = Math.max(0, Math.floor(seconds));
-      const h = Math.floor(total / 3600);
-      const m = Math.floor((total % 3600) / 60);
-      const s = total % 60;
-      return h ? `${h}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}` : `${m}:${String(s).padStart(2,"0")}`;
-    }
-
-    function updateDirectControls() {
-      const duration = video.duration || 0;
-      const current = video.currentTime || 0;
-      $("#directCurrentTop").textContent = formatTime(current);
-      $("#directDuration").textContent = duration ? formatTime(duration) : (currentSource()?.duration || "--:--");
-      $("#directProgress").value = duration ? Math.round((current / duration) * 1000) : 0;
-      $("#directPlayIcon").innerHTML = video.paused
-        ? '<path d="M7 4v16l13-8z"></path>'
-        : '<path d="M7 5h4v14H7zM14 5h4v14h-4z"></path>';
-    }
-
-    function showDirectControls() {
-      if (video.classList.contains("media-hidden")) return;
-      directControls.classList.remove("hidden");
-      clearTimeout(state.controlsTimer);
-      if (!video.paused) state.controlsTimer = setTimeout(() => directControls.classList.add("hidden"), 3200);
-    }
-
-    video.addEventListener("loadedmetadata", () => {
-      loading.classList.add("hidden");
-      updateDirectControls();
-    });
-    video.addEventListener("canplay", () => loading.classList.add("hidden"));
-    video.addEventListener("timeupdate", updateDirectControls);
-    video.addEventListener("play", () => { updateDirectControls(); showDirectControls(); });
-    video.addEventListener("pause", () => { updateDirectControls(); directControls.classList.remove("hidden"); });
-    video.addEventListener("ended", () => {
-      directControls.classList.remove("hidden");
+    function handlePlaybackEnded() {
       if (state.currentMovie?.type === "series") {
         const season = state.currentMovie.seasons[state.currentSeason];
         if (state.currentEpisode + 1 < season.episodes.length) {
           showToast("Episodio terminado. Selecciona el siguiente episodio");
         }
       }
-    });
-    video.addEventListener("click", () => {
-      if (directControls.classList.contains("hidden")) showDirectControls();
-      else directControls.classList.add("hidden");
-    });
-    $("#playerRatio").addEventListener("mousemove", showDirectControls);
-    $("#playerRatio").addEventListener("touchstart", showDirectControls, { passive: true });
-
-    $("#directPlayButton").onclick = () => video.paused ? video.play() : video.pause();
-    $("#directProgress").addEventListener("input", event => {
-      if (video.duration) video.currentTime = (Number(event.target.value) / 1000) * video.duration;
-    });
-
-    $("#backButton").onclick = () => history.back();
-    $("#bigPlayButton").onclick = startPlayback;
-    $("#previewPlayButton").onclick = startPlayback;
-
-    async function toggleFullscreen() {
-      const target = $("#playerRatio");
-      try {
-        if (!document.fullscreenElement) await target.requestFullscreen();
-        else await document.exitFullscreen();
-      } catch {
-        showToast("Tu navegador no permitió pantalla completa");
-      }
     }
 
-    $("#previewFullscreenButton").onclick = toggleFullscreen;
-    $("#directFullscreenButton").onclick = toggleFullscreen;
-    $("#helpButton").onclick = () => showToast(state.currentMovie?.type === "series" ? "Selecciona una temporada y después toca cualquier episodio" : "Usa los controles del reproductor MP4 para reproducir, pausar, adelantar o abrir en pantalla completa");
+    if (videoPlayer) {
+      videoPlayer.on("ended", handlePlaybackEnded);
+      videoPlayer.on("error", () => {
+        const error = videoPlayer.error();
+        if (error) showToast("No se pudo reproducir este MP4. Prueba abrirlo en una pestaña nueva");
+      });
+    } else if (videoElement) {
+      videoElement.addEventListener("ended", handlePlaybackEnded);
+      videoElement.addEventListener("error", () => showToast("No se pudo reproducir este MP4"));
+    }
+
+    $("#backButton").onclick = () => history.back();
+    $("#helpButton").onclick = () => showToast(
+      state.currentMovie?.type === "series"
+        ? "Selecciona una temporada y un episodio; después toca el botón central de Video.js"
+        : "Toca el botón central para reproducir. Video.js incluye progreso, volumen, pantalla completa y Picture-in-Picture"
+    );
     $("#serverMenuButton").onclick = openServerSheet;
     $("#closeServerSheet").onclick = closeServerSheet;
     $("#openExternalServer").onclick = () => {
@@ -4211,10 +4272,8 @@
       }
 
       function applySettings() {
-        const autoplay = localStorage.getItem("cineplay_autoplay") !== "false";
         const largeCards = localStorage.getItem("cineplay_large_cards") === "true";
         const reduceMotion = localStorage.getItem("cineplay_reduce_motion") === "true";
-        byId("autoplaySetting").checked = autoplay;
         byId("largeCardsSetting").checked = largeCards;
         byId("motionSetting").checked = reduceMotion;
         document.body.classList.toggle("large-cards", largeCards);
@@ -4262,11 +4321,6 @@
         });
 
         byId("tvDemoButton").onclick = () => showToast("La sección TV está lista para agregar tus canales");
-
-        byId("autoplaySetting").onchange = event => {
-          localStorage.setItem("cineplay_autoplay", String(event.target.checked));
-          showToast(event.target.checked ? "Autoplay activado" : "Autoplay desactivado");
-        };
         byId("largeCardsSetting").onchange = event => {
           localStorage.setItem("cineplay_large_cards", String(event.target.checked));
           document.body.classList.toggle("large-cards", event.target.checked);
