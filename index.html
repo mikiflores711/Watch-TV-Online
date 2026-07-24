@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#11131d" />
   <title>CinePlay | Películas y Series</title>
-  <link href="https://vjs.zencdn.net/8.23.8/video-js.min.css" rel="stylesheet" />
+  
   <style>
     :root {
       --bg: #10121b;
@@ -395,6 +395,16 @@
     }
 
     .player-chrome {
+      position: relative !important;
+      inset: auto !important;
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 10px;
+      background: #191c28;
+      z-index: 5;
+    }
       position: absolute;
       inset: 0 0 auto;
       z-index: 10;
@@ -1411,10 +1421,29 @@
       aspect-ratio: 16 / 9;
       max-height: none;
       background: #000;
+      position: relative;
+      overflow: hidden;
+      border-radius: 0 0 14px 14px;
     }
 
-    #directVideo,
-    #directVideo.video-js {
+    .playerjs-container {
+      width: 100%;
+      height: 100%;
+      min-height: 240px;
+      background: #000;
+    }
+
+    .playerjs-container iframe,
+    .playerjs-container video {
+      width: 100% !important;
+      height: 100% !important;
+      display: block;
+      object-fit: contain;
+      background: #000;
+    }
+
+    #directPlayer,
+    #directPlayer.playerjs-container {
       position: absolute;
       inset: 0;
       z-index: 2;
@@ -1426,14 +1455,14 @@
       font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
-    #directVideo .vjs-tech {
+    #directPlayer video {
       width: 100% !important;
       height: 100% !important;
       object-fit: contain;
       background: #000;
     }
 
-    #directVideo .vjs-poster {
+    #directPlayer .playerjs-poster {
       background-position: center;
       background-repeat: no-repeat;
       background-size: cover;
@@ -1734,18 +1763,7 @@
     <!-- VISTA INDIVIDUAL DE PELÍCULA -->
     <section id="detailView" class="detail-view">
       <div class="player-shell">
-        <div class="player-ratio" id="playerRatio">
-          <video
-            id="directVideo"
-            class="video-js vjs-big-play-centered"
-            controls
-            playsinline
-            preload="metadata"
-            aria-label="Reproductor de películas y series">
-            <p class="vjs-no-js">Activa JavaScript para reproducir este video.</p>
-          </video>
-
-          <div class="player-chrome">
+        <div class="player-chrome">
             <button id="backButton" class="chrome-button" aria-label="Regresar">
               <svg class="svg-icon" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"></path></svg>
             </button>
@@ -1758,7 +1776,9 @@
               </button>
             </div>
           </div>
-        </div>
+
+        <div class="player-ratio" id="playerRatio">
+          </div>
       </div>
 
       <div class="detail-body">
@@ -1833,8 +1853,7 @@
 
   <div id="toast" class="toast"></div>
 
-  <script>window.HELP_IMPROVE_VIDEOJS = false;</script>
-  <script src="https://vjs.zencdn.net/8.23.8/video.min.js"></script>
+  <script src="https://playerjs.com/playerjs.js" type="text/javascript"></script>
 
   <script>
     /* ============================================================
@@ -3643,24 +3662,33 @@
 
     const catalogView = $("#catalogView");
     const detailView = $("#detailView");
-    const videoElement = $("#directVideo");
+    const playerContainer = $("#directPlayer");
     const serverOverlay = $("#serverOverlay");
-    const videoPlayer = window.videojs
-      ? window.videojs(videoElement, {
-          controls: true,
-          autoplay: false,
-          preload: "metadata",
-          responsive: true,
-          inactivityTimeout: 2600,
-          controlBar: {
-            pictureInPictureToggle: true,
-            fullscreenToggle: true
-          }
-        })
-      : null;
+    let playerJs = null;
 
-    if (videoPlayer) {
-      videoPlayer.autoplay(false);
+    function ensurePlayerJs(source = null, poster = "") {
+      if (playerJs) return playerJs;
+      if (!window.Playerjs) {
+        showToast("No se pudo cargar PlayerJS. Recarga la página e inténtalo de nuevo");
+        return null;
+      }
+      playerJs = new Playerjs({
+        id: "directPlayer",
+        file: source?.url || "",
+        poster: poster || "",
+        autoplay: 0,
+        preload: 0,
+        title: state.currentMovie?.title || "CinePlay"
+      });
+      return playerJs;
+    }
+
+    function resetMedia() {
+      clearTimeout(state.controlsTimer);
+      if (playerJs) {
+        try { playerJs.api("pause"); } catch (_) {}
+        try { playerJs.api("stop"); } catch (_) {}
+      }
     }
 
     function escapeXml(text) {
@@ -3813,19 +3841,6 @@
         return state.currentMovie.seasons[state.currentSeason]?.episodes[state.currentEpisode] || null;
       }
       return state.currentMovie.sources[state.currentSource] || null;
-    }
-
-    function resetMedia() {
-      clearTimeout(state.controlsTimer);
-      if (videoPlayer) {
-        videoPlayer.pause();
-        videoPlayer.reset();
-        videoPlayer.autoplay(false);
-      } else if (videoElement) {
-        videoElement.pause();
-        videoElement.removeAttribute("src");
-        videoElement.load();
-      }
     }
 
     function openMovie(movieId, updateHash = true) {
@@ -3993,21 +4008,22 @@
     function setPlayerPoster(movie = state.currentMovie) {
       if (!movie) return;
       const poster = makePoster(movie, true);
-      if (videoPlayer) videoPlayer.poster(poster);
-      else if (videoElement) videoElement.poster = poster;
+      const p = ensurePlayerJs(null, poster);
+      if (p) {
+        try { p.api("poster", poster); } catch (_) {}
+      }
     }
 
     function setPlayerSource(source) {
       if (!source?.url || !isDirectVideo(source)) return;
-      const playerSource = { src: source.url, type: mediaMimeType(source) };
-      if (videoPlayer) {
-        videoPlayer.autoplay(false);
-        videoPlayer.src(playerSource);
-        videoPlayer.load();
-      } else if (videoElement) {
-        videoElement.src = source.url;
-        videoElement.load();
-      }
+      const poster = state.currentMovie ? makePoster(state.currentMovie, true) : "";
+      const p = ensurePlayerJs(source, poster);
+      if (!p) return;
+      try {
+        p.api("pause");
+        p.api("file", source.url);
+        p.api("poster", poster);
+      } catch (_) {}
     }
 
     function openServerSheet() {
@@ -4036,22 +4052,19 @@
       }
     }
 
-    if (videoPlayer) {
-      videoPlayer.on("ended", handlePlaybackEnded);
-      videoPlayer.on("error", () => {
-        const error = videoPlayer.error();
-        if (error) showToast("No se pudo reproducir este MP4. Prueba abrirlo en una pestaña nueva");
-      });
-    } else if (videoElement) {
-      videoElement.addEventListener("ended", handlePlaybackEnded);
-      videoElement.addEventListener("error", () => showToast("No se pudo reproducir este MP4"));
-    }
+    window.PlayerjsEvents = function(event, id, info) {
+      if (id !== "directPlayer") return;
+      if (event === "end") handlePlaybackEnded();
+      if (event === "error" || event === "loaderror") {
+        showToast("No se pudo reproducir este MP4. Prueba abrirlo en una pestaña nueva");
+      }
+    };
 
     $("#backButton").onclick = () => history.back();
     $("#helpButton").onclick = () => showToast(
       state.currentMovie?.type === "series"
-        ? "Selecciona una temporada y un episodio; después toca el botón central de Video.js"
-        : "Toca el botón central para reproducir. Video.js incluye progreso, volumen, pantalla completa y Picture-in-Picture"
+        ? "Selecciona una temporada y un episodio; después toca el botón central de PlayerJS"
+        : "Toca el botón central para reproducir. PlayerJS incluye progreso, volumen y pantalla completa"
     );
     $("#serverMenuButton").onclick = openServerSheet;
     $("#closeServerSheet").onclick = closeServerSheet;
